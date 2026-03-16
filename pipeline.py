@@ -20,6 +20,7 @@ OUTPUT_DIR = 'output'
 
 # ─── Pipeline Functions ───────────────────────────────────────────────────────
 
+
 def load_data(filepath):
     """Load sales records from a CSV file.
 
@@ -29,10 +30,14 @@ def load_data(filepath):
     Returns:
         pd.DataFrame: Raw sales records DataFrame.
     """
-    # TODO: Load the CSV using pd.read_csv(filepath)
-    # TODO: Print a progress message: f"Loaded {len(df)} records from {filepath}"
-    # TODO: Return the DataFrame
-    pass
+    # قراءة الملف باستخدام المسار الممرر للوظيفة
+    df = pd.read_csv(filepath)
+    
+    # طباعة رسالة توضح عدد السجلات التي تم تحميلها
+    print(f"Loaded {len(df)} records from {filepath}")
+    
+    # إرجاع البيانات (DataFrame) لاستخدامها في الوظائف التالية
+    return df
 
 
 def clean_data(df):
@@ -49,13 +54,23 @@ def clean_data(df):
     Returns:
         pd.DataFrame: Cleaned DataFrame (do not modify the input in place).
     """
-    # TODO: Start with df = df.copy() — never modify the input DataFrame in place
-    # TODO: Fill missing 'quantity' with df['quantity'].median()
-    # TODO: Fill missing 'unit_price' with df['unit_price'].median()
-    # TODO: Parse 'date' column: pd.to_datetime(df['date'], errors='coerce')
-    # TODO: Print progress and return cleaned DataFrame
-    pass
+    # البدء بنسخة من البيانات لضمان عدم تعديل الأصل
+    df = df.copy()
 
+    # تعبئة القيم المفقودة بالوسيط (Median)
+    df['quantity'] = df['quantity'].fillna(df['quantity'].median())
+    df['unit_price'] = df['unit_price'].fillna(df['unit_price'].median())
+
+    # تحويل العمود لتاريخ ومعالجة الأخطاء (مثل التواريخ المكتوبة غلط)
+    df['date'] = pd.to_datetime(df['date'], errors='coerce')
+
+    # حذف الصفوف التي لا تزال تحتوي على قيم مفقودة في الكمية والسعر معاً
+    df = df.dropna(subset=['quantity', 'unit_price'], how='all')
+
+    # طباعة رسالة توضح عدد السجلات بعد التنظيف
+    print(f"Cleaned data: {len(df)} records")
+
+    return df
 
 def add_features(df):
     """Compute derived columns.
@@ -69,12 +84,15 @@ def add_features(df):
     Returns:
         pd.DataFrame: DataFrame with new columns added.
     """
-    # TODO: Start with df = df.copy()
-    # TODO: df['revenue'] = df['quantity'] * df['unit_price']
-    # TODO: df['day_of_week'] = df['date'].dt.day_name()
-    #        (requires 'date' to be datetime type — must call after clean_data)
-    # TODO: Return the enriched DataFrame
-    pass
+    df = df.copy()
+
+    # حساب الأرباح: الكمية × سعر الوحدة
+    df['revenue'] = df['quantity'] * df['unit_price']
+
+    # استخراج اسم اليوم من التاريخ (مثل Monday, Tuesday...)
+    df['day_of_week'] = df['date'].dt.day_name()
+
+    return df
 
 
 def generate_summary(df):
@@ -90,9 +108,15 @@ def generate_summary(df):
             - 'top_category': product category with highest total revenue
             - 'record_count': number of records in df
     """
-    # TODO: Compute top category: df.groupby('product_category')['revenue'].sum().idxmax()
-    # TODO: Return a dict with the four keys above
-    pass
+    summary = {
+        'total_revenue': df['revenue'].sum(),
+        'avg_order_value': df['revenue'].mean(),
+        # معرفة الفئة الأكثر مبيعاً من حيث الأرباح
+        'top_category': df.groupby('product_category')['revenue'].sum().idxmax(),
+        'record_count': len(df)
+    }
+    return summary
+    
 
 
 def create_visualizations(df, output_dir=OUTPUT_DIR):
@@ -111,40 +135,52 @@ def create_visualizations(df, output_dir=OUTPUT_DIR):
         df (pd.DataFrame): Enriched DataFrame from add_features().
         output_dir (str): Directory to save PNG files (create if needed).
     """
-    # TODO: Create the output directory: os.makedirs(output_dir, exist_ok=True)
+    # التأكد من وجود مجلد output، وإذا مش موجود بنشأه
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # 1. رسمة الأرباح حسب الفئة (Bar Chart)
+    fig1, ax1 = plt.subplots()
+    df.groupby('product_category')['revenue'].sum().plot(kind='bar', ax=ax1)
+    ax1.set_title("Total Revenue by Category")
+    fig1.savefig(f'{output_dir}/revenue_by_category.png', dpi=150, bbox_inches='tight')
+    plt.close(fig1)
 
-    # TODO: Chart 1 — Bar chart: total revenue by product category
-    #   - Group by 'product_category', sum 'revenue'
-    #   - fig, ax = plt.subplots(figsize=(10, 6))
-    #   - ax.bar(categories, values) or use ax.barh() for horizontal
-    #   - Set title, labels
-    #   - fig.savefig(f'{output_dir}/revenue_by_category.png', dpi=150, bbox_inches='tight')
-    #   - plt.close(fig)
+    # 2. رسمة ترند الأرباح اليومي (Line Chart)
+    fig2, ax2 = plt.subplots()
+    df.groupby('date')['revenue'].sum().plot(kind='line', ax=ax2)
+    ax2.set_title("Daily Revenue Trend")
+    fig2.savefig(f'{output_dir}/daily_revenue_trend.png', dpi=150, bbox_inches='tight')
+    plt.close(fig2)
 
-    # TODO: Chart 2 — Line chart: daily revenue trend
-    #   - Group by 'date', sum 'revenue' — sort by date
-    #   - ax.plot(dates, revenues)
-    #   - fig.savefig(f'{output_dir}/daily_revenue_trend.png', ...)
-    #   - plt.close(fig)
-
-    # TODO: Chart 3 — Horizontal bar chart: avg order value by payment method
-    #   - Group by 'payment_method', mean 'revenue'
-    #   - ax.barh(methods, avg_values)
-    #   - fig.savefig(f'{output_dir}/avg_order_by_payment.png', ...)
-    #   - plt.close(fig)
-
-    pass
-
+    # 3. رسمة متوسط الطلب حسب طريقة الدفع (Horizontal Bar)
+    fig3, ax3 = plt.subplots()
+    df.groupby('payment_method')['revenue'].mean().plot(kind='barh', ax=ax3)
+    ax3.set_title("Avg Order Value by Payment Method")
+    fig3.savefig(f'{output_dir}/avg_order_by_payment.png', dpi=150, bbox_inches='tight')
+    plt.close(fig3)
+    
 
 def main():
     """Run the full data pipeline end-to-end."""
-    # TODO: Call load_data(DATA_PATH)
-    # TODO: Call clean_data(df)
-    # TODO: Call add_features(df)
-    # TODO: Call generate_summary(df) and print the results
-    # TODO: Call create_visualizations(df)
-    # TODO: Print "Pipeline complete."
-    pass
+    # 1. تحميل البيانات
+    df = load_data('data/sales_records.csv')
+    
+    # 2. التنظيف
+    df = clean_data(df)
+    
+    # 3. إضافة الميزات
+    df = add_features(df)
+    
+    # 4. طباعة الملخص
+    summary = generate_summary(df)
+    print("\n=== Summary Statistics ===")
+    for key, value in summary.items():
+        print(f"{key}: {value}")
+    
+    # 5. إنتاج الصور
+    create_visualizations(df)
+    
+    print("\nPipeline complete. Check the 'output' folder for charts!")
 
 
 if __name__ == "__main__":
