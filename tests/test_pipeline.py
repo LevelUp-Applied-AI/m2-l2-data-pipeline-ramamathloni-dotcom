@@ -1,6 +1,6 @@
 import pandas as pd
 import pytest
-from pipeline import load_data, clean_data, add_features
+from src.pipeline import load_data, clean_data, add_features
 
 def test_load_data_returns_dataframe():
     """التأكد أن تحميل البيانات يعمل بشكل صحيح"""
