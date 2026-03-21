@@ -59,7 +59,7 @@ def test_learner_tests_pass():
 
 def test_pipeline_functions_importable():
     """Required pipeline functions must be importable and callable."""
-    from pipeline import load_data, clean_data, add_features, generate_summary
+    from src.pipeline import load_data, clean_data, add_features, generate_summary
     assert callable(load_data), "load_data must be a callable function"
     assert callable(clean_data), "clean_data must be a callable function"
     assert callable(add_features), "add_features must be a callable function"
