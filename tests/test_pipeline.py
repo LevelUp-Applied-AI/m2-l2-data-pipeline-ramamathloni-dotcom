@@ -1,3 +1,5 @@
+import sys
+import os
 import pandas as pd
 import pytest
 from src.pipeline import load_data, clean_data, add_features
